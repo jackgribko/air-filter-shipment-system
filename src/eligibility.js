@@ -32,12 +32,15 @@ function hasAirFilterRider(ridersStr) {
 }
 
 // ---------------------------------------------------------------------------
-// Most-recent shipment date for a tenant, considering:
+// Most-recent shipment event for a tenant, considering:
 //   • historical_shipments  (pre-existing data)
 //   • shipments             (confirmed imports)
 //   • shipment_orders       (pending exports not yet confirmed)
 //
-// We cap the look-up at @asOf so future-dated records don't affect eligibility.
+// historical_shipments and shipments are capped at @as_of so future-dated
+// data doesn't affect a historical eligibility query. shipment_orders are
+// NOT capped: they represent active commitments to ship and must always
+// block re-export, even if @as_of is in the past relative to the order date.
 // ---------------------------------------------------------------------------
 
 const mostRecentShipmentStmt = db.prepare(`
@@ -50,7 +53,7 @@ const mostRecentShipmentStmt = db.prepare(`
       WHERE tenant_id = @tenant_id AND ship_date <= @as_of
     UNION ALL
     SELECT date(ordered_at) AS event_date FROM shipment_orders
-      WHERE tenant_id = @tenant_id AND date(ordered_at) <= @as_of
+      WHERE tenant_id = @tenant_id
   )
 `);
 

@@ -34,6 +34,10 @@
     .badge-warn { background: #fef3c7; color: #92400e; border-radius: 12px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 600; }
     .upload-area { border: 2px dashed #d1d5db; border-radius: 8px; padding: 2rem; text-align: center; }
     .upload-area input { margin-top: 0.75rem; }
+    .banner { padding: 0.75rem 1rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.875rem; }
+    .banner.success { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .banner.info    { background: #dbeafe; color: #1e40af; border: 1px solid #bfdbfe; }
+    .banner a { color: inherit; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -46,6 +50,7 @@
   </header>
 
   <main>
+    {{BANNER}}
     <div class="stat-bar">
       <div class="stat">
         <div class="num">{{ELIGIBLE_COUNT}}</div>

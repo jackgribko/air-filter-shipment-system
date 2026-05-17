@@ -5,6 +5,7 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
+    "reset": "node src/reset.js",
     "seed-fixtures": "sqlite3 database.db \".read fixtures/supplemental-fixtures.sql\"",
     "legacy:import": "node scripts/legacy-shipstation-import.js",
     "legacy:parse-sizes": "node scripts/legacy-size-parser.js"

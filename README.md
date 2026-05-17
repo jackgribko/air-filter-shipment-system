@@ -20,6 +20,12 @@ npm start
 # → http://localhost:3000
 ```
 
+To reset the database to its original state (clears generated data, keeps tenants/enrollments/historical_shipments intact, removes generated export CSVs):
+
+```bash
+npm run reset
+```
+
 The database (`database.db`), property configuration (`properties.json`), and ShipStation CSV (`shipstation-export.csv`) are included in the repository.
 
 ### What the UI does
