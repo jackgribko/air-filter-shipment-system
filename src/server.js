@@ -184,8 +184,8 @@ app.get("/review", (req, res) => {
               ${opts}
             </select>
             <div class="actions">
-              <button type="submit" class="btn-primary">Confirm Match</button>
-              <a href="/review/${p.id}/dismiss" class="btn-danger" onclick="return confirm('Dismiss this row?')">Dismiss</a>
+              <button type="submit" class="btn btn-primary">Confirm Match</button>
+              <a href="/review/${p.id}/dismiss" class="btn btn-danger" onclick="return confirm('Dismiss this row?')">Dismiss</a>
             </div>
           </form>
         </div>

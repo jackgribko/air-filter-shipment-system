@@ -2,6 +2,16 @@
 
 A shipment management system for a renters insurance company that ships air filters to eligible tenants. Built as a Node.js/Express web application backed by SQLite.
 
+## Screenshots
+
+**Dashboard** — eligibility, export, import, and the eligible-tenants table on one page:
+
+![Dashboard](docs/screenshots/01-dashboard.png)
+
+**Manual review queue** — unmatched import rows with candidate tenants for one-click resolution:
+
+![Review queue](docs/screenshots/02-review-queue.png)
+
 ---
 
 ## Setup & Running
