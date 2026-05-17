@@ -1,0 +1,6 @@
+misc-files/
+node_modules/
+.zed/
+database.db-shm
+database.db-wal
+/tmp/

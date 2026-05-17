@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Air Filter Shipment System</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f7fa; color: #1a1a2e; }
+    header { background: #16213e; color: #fff; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.25rem; font-weight: 600; }
+    nav a { color: #e0e0ff; text-decoration: none; margin-left: 1.5rem; font-size: 0.9rem; }
+    nav a:hover { color: #fff; }
+    main { max-width: 1200px; margin: 2rem auto; padding: 0 1.5rem; }
+    .stat-bar { display: flex; gap: 1rem; margin-bottom: 2rem; }
+    .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem 1.5rem; flex: 1; }
+    .stat .num { font-size: 2rem; font-weight: 700; color: #2563eb; }
+    .stat .label { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
+    section { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 2rem; }
+    section h2 { padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0; font-size: 1rem; font-weight: 600; }
+    .section-inner { padding: 1.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { text-align: left; padding: 0.5rem 0.75rem; background: #f8fafc; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 0.625rem 0.75rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+    tr:last-child td { border-bottom: none; }
+    .form-row { display: flex; gap: 1rem; align-items: flex-end; }
+    .field { display: flex; flex-direction: column; gap: 0.3rem; }
+    label { font-size: 0.8rem; color: #64748b; font-weight: 500; }
+    input[type="date"] { padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.875rem; }
+    .btn { padding: 0.5rem 1.25rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.875rem; font-weight: 500; }
+    .btn-primary { background: #2563eb; color: #fff; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-secondary { background: #f1f5f9; color: #334155; border: 1px solid #d1d5db; }
+    .badge-warn { background: #fef3c7; color: #92400e; border-radius: 12px; padding: 0.2rem 0.6rem; font-size: 0.75rem; font-weight: 600; }
+    .upload-area { border: 2px dashed #d1d5db; border-radius: 8px; padding: 2rem; text-align: center; }
+    .upload-area input { margin-top: 0.75rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Air Filter Shipment System</h1>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/review">Review Queue <span class="badge-warn">{{PENDING_COUNT}}</span></a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="stat-bar">
+      <div class="stat">
+        <div class="num">{{ELIGIBLE_COUNT}}</div>
+        <div class="label">Eligible tenants as of {{ELIGIBILITY_DATE}}</div>
+      </div>
+      <div class="stat">
+        <div class="num">{{PENDING_COUNT}}</div>
+        <div class="label">Pending manual review</div>
+      </div>
+    </div>
+
+    <!-- Export -->
+    <section>
+      <h2>Export Shipment Batch</h2>
+      <div class="section-inner">
+        <form method="POST" action="/export">
+          <div class="form-row">
+            <div class="field">
+              <label for="as_of">Eligibility date</label>
+              <input type="date" id="as_of" name="as_of" value="{{ELIGIBILITY_DATE}}">
+            </div>
+            <button type="submit" class="btn btn-primary">Generate CSV &amp; Record Batch</button>
+          </div>
+        </form>
+        <p style="margin-top:0.75rem; font-size:0.8rem; color:#64748b;">
+          Exporting records the batch so tenants are not re-exported until their property interval elapses.
+        </p>
+      </div>
+    </section>
+
+    <!-- Export history -->
+    <section>
+      <h2>Export History</h2>
+      <table>
+        <thead>
+          <tr><th>#</th><th>Exported At</th><th>Tenants</th><th>File</th></tr>
+        </thead>
+        <tbody>{{BATCH_ROWS}}</tbody>
+      </table>
+    </section>
+
+    <!-- Import -->
+    <section>
+      <h2>Import ShipStation CSV</h2>
+      <div class="section-inner">
+        <form method="POST" action="/import" enctype="multipart/form-data">
+          <div class="upload-area">
+            <div>Select a ShipStation export CSV to import</div>
+            <input type="file" name="csv" accept=".csv" required>
+            <br><br>
+            <button type="submit" class="btn btn-primary">Import</button>
+          </div>
+        </form>
+        <p style="margin-top:0.75rem; font-size:0.8rem; color:#64748b;">
+          Rows that cannot be confidently matched will appear in the
+          <a href="/review">Review Queue</a>.
+        </p>
+      </div>
+    </section>
+
+    <!-- Eligible tenants table -->
+    <section>
+      <h2>Eligible Tenants — {{ELIGIBILITY_DATE}}</h2>
+      <table>
+        <thead>
+          <tr><th>ID</th><th>Name</th><th>Address</th><th>Interval</th><th>Last Shipment</th><th>Gap</th></tr>
+        </thead>
+        <tbody>{{ELIGIBLE_ROWS}}</tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

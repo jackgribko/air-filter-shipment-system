@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "description": "Property shipment intervals and tenant assignments for the work-trial fixtures.",
+  "properties": [
+    {
+      "id": "prop-cedar-court",
+      "name": "Cedar Court",
+      "shipment_interval_days": 90,
+      "tenant_ids": [135437, 135438, 135439, 135440, 135441, 135442, 135443, 135444, 135445, 135446, 135447]
+    },
+    {
+      "id": "prop-oak-terrace",
+      "name": "Oak Terrace",
+      "shipment_interval_days": 60,
+      "tenant_ids": [135448, 135449, 135450, 135451, 135452, 135453, 135454, 135455, 135456, 135457, 135458]
+    },
+    {
+      "id": "prop-river-house",
+      "name": "River House",
+      "shipment_interval_days": 120,
+      "tenant_ids": [135459, 135460, 135461, 135462, 135463, 135464, 135465, 135466, 135467, 135468, 135469]
+    },
+    {
+      "id": "prop-pine-station",
+      "name": "Pine Station",
+      "shipment_interval_days": 90,
+      "tenant_ids": [135470, 135471, 135472, 135473, 135474, 135475, 135476, 135477, 135478, 135479, 136022]
+    },
+    {
+      "id": "prop-lakeview",
+      "name": "Lakeview",
+      "shipment_interval_days": 45,
+      "tenant_ids": [136023, 136024, 136025, 136026, 136027, 136028, 136029, 136030, 136031, 140057, 140058]
+    },
+    {
+      "id": "prop-harbor-point",
+      "name": "Harbor Point",
+      "shipment_interval_days": 90,
+      "tenant_ids": [145306, 145535, 145536, 145537, 145538, 145539, 145540, 145541, 145542, 145543, 145544]
+    },
+    {
+      "id": "prop-willow-crossing",
+      "name": "Willow Crossing",
+      "shipment_interval_days": 75,
+      "tenant_ids": [145545, 145546, 145547, 145548, 145549, 145550, 145551, 145552, 145553, 145554, 145555]
+    },
+    {
+      "id": "prop-riverbend",
+      "name": "Riverbend",
+      "shipment_interval_days": 90,
+      "tenant_ids": [145556, 145557, 145558, 145559, 145560, 145561, 145562, 145563, 145564, 145565, 145566]
+    },
+    {
+      "id": "prop-maple-loop",
+      "name": "Maple Loop",
+      "shipment_interval_days": 90,
+      "tenant_ids": [900001, 900002]
+    },
+    {
+      "id": "prop-riverbend",
+      "name": "Riverbend Annex",
+      "shipment_interval_days": 45,
+      "tenant_ids": [145566]
+    },
+    {
+      "id": "prop-oak-overflow",
+      "name": "Oak Overflow",
+      "shipment_interval_days": 120,
+      "tenant_ids": [135452]
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "air-filter-shipment-system",
+  "version": "1.0.0",
+  "description": "Shipment management system for air filter deliveries",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "seed-fixtures": "sqlite3 database.db \".read fixtures/supplemental-fixtures.sql\"",
+    "legacy:import": "node scripts/legacy-shipstation-import.js",
+    "legacy:parse-sizes": "node scripts/legacy-size-parser.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^12.10.0",
+    "csv-parse": "^5.6.0",
+    "csv-stringify": "^6.7.0",
+    "express": "^5.2.1",
+    "multer": "^2.1.1"
+  }
+}
