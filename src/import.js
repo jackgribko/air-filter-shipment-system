@@ -35,9 +35,12 @@ function formatDate(isoStr) {
   if (!isoStr) return null;
   const d = new Date(isoStr);
   if (isNaN(d.getTime())) return null;
-  const yyyy = d.getFullYear();
-  const mm   = String(d.getMonth() + 1).padStart(2, "0");
-  const dd   = String(d.getDate()).padStart(2, "0");
+  // Use UTC date components so the stored date does not shift across timezones.
+  // ShipStation emits timestamps like "2026-01-15T08:00:00Z" — we want the
+  // calendar date as recorded, not as seen from the server's local clock.
+  const yyyy = d.getUTCFullYear();
+  const mm   = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const dd   = String(d.getUTCDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
 
@@ -274,21 +277,42 @@ function getTenantCandidates(pendingId) {
   const pi = db.prepare(`SELECT * FROM pending_imports WHERE id = ?`).get(pendingId);
   if (!pi) return { pending: null, candidates: [] };
 
-  // Find candidates: match on last name fragment or partial address
-  const nameParts = pi.raw_name.trim().toLowerCase().split(/\s+/);
-  const lastName = nameParts[nameParts.length - 1] || "";
+  // Pull a broad pool of candidates then re-score using the same function
+  // used for auto-matching, so reviewers see *why* a row didn't auto-match.
+  // We over-fetch on last-name OR street-number prefix so an "address moved"
+  // case (matching name, different address) and a "name changed" case
+  // (matching address, different name) both surface candidates.
+  const nameParts = (pi.raw_name || "").trim().toLowerCase().split(/\s+/);
+  const lastName  = nameParts[nameParts.length - 1] || "";
+  const addrToken = (pi.address1 || "").toLowerCase().split(/\s+/)[0] || "";
 
-  const candidates = db.prepare(`
+  const pool = db.prepare(`
     SELECT * FROM tenants
     WHERE lower(last_name) LIKE @last
        OR lower(address1)  LIKE @addr
-    LIMIT 20
+    LIMIT 50
   `).all({
     last: `%${lastName}%`,
-    addr: `%${(pi.address1 || "").toLowerCase().split(" ")[0]}%`,
+    addr: `%${addrToken}%`,
   });
 
-  return { pending: pi, candidates };
+  // Re-score against the same scorer used by the auto-matcher
+  const scoringRow = {
+    name:     norm(pi.raw_name),
+    address1: normAddr(pi.address1),
+    city:     norm(pi.city),
+    state:    norm(pi.state),
+    zip:      norm(pi.zip),
+  };
+  const scored = pool
+    .map((t) => ({ tenant: t, score: scoreCandidate(scoringRow, t) }))
+    .sort((a, b) => b.score - a.score);
+
+  return {
+    pending: pi,
+    candidates: scored.slice(0, 20),
+    threshold: CONFIDENCE_THRESHOLD,
+  };
 }
 
 const confirmMatch = db.prepare(`

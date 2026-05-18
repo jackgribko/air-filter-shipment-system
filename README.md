@@ -36,6 +36,12 @@ To reset the database to its original state (clears generated data, keeps tenant
 npm run reset
 ```
 
+To run the test suite (smoke-tests for rider parsing, eligibility, import matching, and size parsing):
+
+```bash
+npm test
+```
+
 The database (`database.db`), property configuration (`properties.json`), and ShipStation CSV (`shipstation-export.csv`) are included in the repository.
 
 ### What the UI does
@@ -78,7 +84,7 @@ A tenant is eligible as of `2026-04-24` if:
 
 2. Their most recent shipment event (across `historical_shipments`, `shipments`, and `shipment_orders`) is either absent or older than their property's `shipment_interval_days` as of the check date.
 
-**Result:** 57 eligible tenants as of 2026-04-24.
+**Result:** 88 eligible tenants as of 2026-04-24.
 
 ### 3. Shipment Export
 
@@ -110,7 +116,7 @@ A row is auto-matched only when exactly one candidate scores ≥ 80 with no tie.
 
 **Result on `shipstation-export.csv`:** 193 auto-matched, 2 flagged for manual review, 0 duplicates, 0 invalid.
 
-**Manual review UI** (`/review`): displays each unmatched row alongside candidate tenants matched by last name / address fragment. A reviewer confirms a match (creating a confirmed `shipments` record and migrating filter sizes) or dismisses the row.
+**Manual review UI** (`/review`): displays each unmatched row alongside candidate tenants matched by last name / address fragment. **Candidates are ranked by the same scoring function used for auto-matching**, with the top score and the auto-match threshold shown above the dropdown — so a reviewer can see at a glance *why* a row was flagged (e.g. Casey Morgan scored 100 but tied with a duplicate; German Gerhold scored 70, below the 80 threshold, because his address changed). A reviewer confirms a match (creating a confirmed `shipments` record and migrating filter sizes) or dismisses the row.
 
 ---
 
@@ -124,10 +130,10 @@ Both `"Free Airfilters Delivery"` and `"Airfilters Delivery ($4)"` are treated a
 
 | Anomaly | Handling |
 |---------|----------|
-| `prop-riverbend` appears twice — "Riverbend" (90d) and "Riverbend Annex" (45d) | First occurrence wins; duplicate is logged and skipped on startup |
-| Tenant 145566 assigned to both Riverbend and Riverbend Annex | `MIN(interval_days)` across properties → 45-day interval. Shorter = more conservative = avoids over-shipping |
-| Tenant 135452 assigned to both Oak Terrace (60d) and Oak Overflow (120d) | Same: MIN gives 60-day interval |
-| Tenants with no property assignment | Skipped with a startup warning; cannot determine interval → cannot safely determine eligibility |
+| `prop-riverbend` appears twice — "Riverbend" (90d) and "Riverbend Annex" (45d) | First occurrence wins; duplicate is logged and skipped on startup. The "Annex" row is treated as a data-entry error against the same property ID. |
+| Tenant 145566 assigned to both Riverbend and Riverbend Annex | Only the first-inserted property assignment survives (Riverbend, 90d). The `MIN(interval_days)` query layer below would pick the shorter interval if both were inserted. |
+| Tenant 135452 assigned to both Oak Terrace (60d) and Oak Overflow (120d) | Both rows are inserted into `tenant_properties`; eligibility uses `MIN(interval_days)` → 60d. Shorter = more conservative = avoids over-shipping. |
+| **36 tenants in `tenants` table are not listed in any property** (32 of them have an active eligible enrollment) | A synthetic property `prop-unassigned-default` is created with a 90-day interval (the modal value across configured properties). These tenants are auto-assigned to it and surfaced in a startup warning. Without this fallback they would be silently excluded from eligibility — a major operational gap. |
 
 ### Export recording vs. delivery confirmation
 
@@ -145,19 +151,23 @@ One record has `ship_date = 2026-05-15`, which is after the eligibility date of 
 |-------|--------|----------|
 | Duplicate `prop-riverbend` ID in `properties.json` | Silent overwrite on naive upsert | Detected at startup; first occurrence wins, conflict logged |
 | Tenant in two properties with different intervals | Ambiguous eligibility interval | `MIN(interval_days)` — conservative choice |
+| 36 tenants in DB with no property assignment in JSON | Silent exclusion from eligibility (32 of them are otherwise eligible) | Default 90-day interval via synthetic property + startup warning |
 | `historical_shipments` row with future date (2026-05-15) | Would incorrectly block eligibility | `ship_date <= as_of` filter in query |
 | `riders` stored as PostgreSQL-style array literals `{A,B,C}` | Not queryable with SQLite JSON functions | Parsed in JS: strip `{}`, split on `,` |
-| Tenants with no property assignment | Cannot compute interval | Skipped with logged warning |
+| One CSV row size is text `"twenty-by-twenty"` | Would block the row if treated as fatal | Stored with `parsed_ok=0` and `parse_error`; rest of row imports normally |
+| ShipStation `ship_date` is UTC ISO-8601 | Local-time conversion shifts the date for some timezones | `formatDate()` uses `getUTC*` components |
+| ShipStation CSV has identical-data duplicates (Casey Morgan ×2) | Auto-matcher would pick arbitrarily | Tie detection: if top-scored candidates tie, the row goes to manual review |
 
 ---
 
 ## What I'd Improve With More Time
 
-- **Tests** — unit tests for the eligibility engine and import scorer, integration tests for each API route
+- **More tests** — current suite covers happy-path eligibility, rider parsing, size parsing, and the headline import numbers. I'd add integration tests for each API route, property-fallback coverage, and adversarial CSV inputs.
 - **Authentication** — even a simple session-based login before this touches real tenant data
 - **Batch cancellation** — allow voiding an export batch if shipments were not fulfilled
-- **Confirmed-order linkage** — currently `shipment_orders.confirmed_shipment_id` is populated on import but the eligibility query doesn't yet use it to skip already-confirmed orders from the interval calculation
+- **Confirmed-order linkage** — `shipment_orders.confirmed_shipment_id` exists on the schema but isn't yet populated on import-match. Once it is, the eligibility query could skip orders whose confirmed shipment is already counted, avoiding double-counting near the interval boundary.
 - **Pagination** on the eligible-tenants table and review queue
-- **Confidence score display** in the review UI — showing *why* a row was flagged would help reviewers triage faster
 - **Background import** — for large files the import should run async with a progress indicator rather than blocking the HTTP response
 - **Property conflict resolution UI** — instead of silently picking first-occurrence, surface conflicts for human confirmation
+- **Fuzzy name matching** in the auto-matcher — currently exact-on-normalized; Levenshtein/Jaro-Winkler would catch typos
+- **Soft-deletes / audit log** — review queue dismissals are currently destructive; a real system would want a history of who-decided-what

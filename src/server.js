@@ -155,10 +155,18 @@ app.get("/review", (req, res) => {
     : "";
 
   const cards = pending.map((p) => {
-    const { candidates } = getTenantCandidates(p.id);
-    const opts = candidates.map((t) =>
-      `<option value="${t.id}">${esc(t.first_name)} ${esc(t.last_name)} — ${esc(t.address1)}, ${esc(t.city)}, ${esc(t.state)} ${esc(t.zip)}</option>`
-    ).join("");
+    const { candidates, threshold } = getTenantCandidates(p.id);
+
+    const opts = candidates.length === 0
+      ? `<option value="">(no candidates found by name or address)</option>`
+      : candidates.map(({ tenant: t, score }) =>
+          `<option value="${t.id}">[score ${score}] ${esc(t.first_name)} ${esc(t.last_name)} — ${esc(t.address1)}, ${esc(t.city)}, ${esc(t.state)} ${esc(t.zip)}</option>`
+        ).join("");
+
+    const topScore = candidates[0]?.score ?? 0;
+    const scoreNote = candidates.length
+      ? `<p class="hint">Top candidate scored <strong>${topScore}</strong>; auto-match threshold is <strong>${threshold}</strong>.</p>`
+      : `<p class="hint">No tenants match by last name or street number.</p>`;
 
     return `
     <div class="card">
@@ -178,6 +186,7 @@ app.get("/review", (req, res) => {
         </div>
         <div class="col">
           <h3>Confirm Match</h3>
+          ${scoreNote}
           <form method="POST" action="/review/${p.id}/match">
             <select name="tenant_id">
               <option value="">— select a tenant —</option>
