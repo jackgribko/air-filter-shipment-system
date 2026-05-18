@@ -3,4 +3,7 @@ node_modules/
 .zed/
 database.db-shm
 database.db-wal
+database.test.db
+database.test.db-shm
+database.test.db-wal
 /tmp/
