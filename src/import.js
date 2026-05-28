@@ -358,10 +358,61 @@ function dismissPending(pendingId) {
   dismissRow.run({ id: pendingId });
 }
 
+// ---------------------------------------------------------------------------
+// Filter stock summary
+//
+// Aggregates the filter sizes parsed from imported shipments so an operations
+// team can see how many of each size have gone out (and therefore what to
+// reorder). Read-only — counts rows in filter_sizes, grouped by normalized
+// dimensions. Sizes that failed to parse (e.g. "twenty-by-twenty") are listed
+// separately as a follow-up queue rather than being silently dropped.
+// ---------------------------------------------------------------------------
+
+function fmtInches(n) {
+  // 16 -> "16", 16.5 -> "16.5" (avoids "16.0")
+  return Number.isInteger(n) ? String(n) : String(n);
+}
+
+function getFilterStockSummary() {
+  const rows = db.prepare(`
+    SELECT length_inches, width_inches, depth_inches, raw_size, parsed_ok
+    FROM filter_sizes
+  `).all();
+
+  const parsedMap = new Map();   // "16x20x1" -> count
+  const unparsedMap = new Map(); // "twenty-by-twenty" -> count
+
+  for (const r of rows) {
+    if (r.parsed_ok) {
+      const depth = r.depth_inches != null ? `x${fmtInches(r.depth_inches)}` : "";
+      const size = `${fmtInches(r.length_inches)}x${fmtInches(r.width_inches)}${depth}`;
+      parsedMap.set(size, (parsedMap.get(size) || 0) + 1);
+    } else {
+      const key = r.raw_size || "(blank)";
+      unparsedMap.set(key, (unparsedMap.get(key) || 0) + 1);
+    }
+  }
+
+  const parsed = [...parsedMap.entries()]
+    .map(([size, count]) => ({ size, count }))
+    .sort((a, b) => b.count - a.count || a.size.localeCompare(b.size));
+
+  const unparsed = [...unparsedMap.entries()]
+    .map(([raw_size, count]) => ({ raw_size, count }))
+    .sort((a, b) => b.count - a.count);
+
+  const totalParsed = parsed.reduce((s, r) => s + r.count, 0);
+  const totalUnparsed = unparsed.reduce((s, r) => s + r.count, 0);
+  const distinctSizes = parsed.length;
+
+  return { parsed, unparsed, totalParsed, totalUnparsed, distinctSizes };
+}
+
 module.exports = {
   runImport,
   getPendingReviews,
   getTenantCandidates,
   resolveMatch,
   dismissPending,
+  getFilterStockSummary,
 };

@@ -9,7 +9,7 @@ const { getEligibleTenants }              = require("./eligibility");
 const { runExport, listBatches }          = require("./export");
 const { runImport, getPendingReviews,
         getTenantCandidates, resolveMatch,
-        dismissPending }                   = require("./import");
+        dismissPending, getFilterStockSummary } = require("./import");
 
 const app    = express();
 const upload = multer({ dest: "/tmp/air-filter-uploads/" });
@@ -224,6 +224,47 @@ app.post("/review/:id/match", (req, res) => {
 app.get("/review/:id/dismiss", (req, res) => {
   dismissPending(parseInt(req.params.id, 10));
   res.redirect("/review?msg=dismissed");
+});
+
+// ---------------------------------------------------------------------------
+// Filter stock summary
+// ---------------------------------------------------------------------------
+
+app.get("/stock", (req, res) => {
+  const summary = getFilterStockSummary();
+
+  const parsedRows = summary.parsed.length
+    ? summary.parsed.map((r) =>
+        `<tr><td>${esc(r.size)}</td><td class="num">${r.count}</td></tr>`
+      ).join("")
+    : `<tr><td colspan="2" class="empty-cell">No shipment size data yet — import a ShipStation CSV first.</td></tr>`;
+
+  const unparsedRows = summary.unparsed.length
+    ? summary.unparsed.map((r) =>
+        `<tr><td>${esc(r.raw_size)}</td><td class="num">${r.count}</td></tr>`
+      ).join("")
+    : "";
+
+  const unparsedSection = summary.unparsed.length
+    ? `<section>
+         <h2>Needs Follow-up — Unrecognized Sizes</h2>
+         <div class="section-inner">
+           <p class="hint">These sizes could not be parsed into dimensions and were not counted in the totals above. They are captured here for manual follow-up rather than dropped.</p>
+           <table>
+             <thead><tr><th>Raw value</th><th class="num">Count</th></tr></thead>
+             <tbody>${unparsedRows}</tbody>
+           </table>
+         </div>
+       </section>`
+    : "";
+
+  view(res, "stock.html", {
+    TOTAL_FILTERS:   summary.totalParsed,
+    DISTINCT_SIZES:  summary.distinctSizes,
+    NEEDS_FOLLOWUP:  summary.totalUnparsed,
+    PARSED_ROWS:     parsedRows,
+    UNPARSED_SECTION: unparsedSection,
+  });
 });
 
 // ---------------------------------------------------------------------------

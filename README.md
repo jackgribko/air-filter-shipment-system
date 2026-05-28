@@ -101,6 +101,18 @@ Confirming a match creates the `shipments` record and migrates the filter sizes 
 
 ---
 
+## Beyond the Spec — Filter Stock Summary
+
+The four requirements above are the brief. This one isn't required, but the parsed filter-size data makes it nearly free and it answers a real operational question: **which filter sizes does the warehouse need to keep stocked?**
+
+The **Stock Summary** page (`/stock`) aggregates every parsed filter size across all imported shipments into a quantity-by-size table (e.g. `20x20x1 → 36`, `14x24x1 → 32`). Sizes that couldn't be parsed (like the `"twenty-by-twenty"` row) are listed in a separate **"needs follow-up"** section rather than being dropped — so nothing is lost, but bad data doesn't pollute the totals.
+
+It's a read-only view that reuses the `filter_sizes` data already captured during import, and its totals are reconciled against the database by a test.
+
+![Filter stock summary — quantity by size for warehouse reordering](docs/screenshots/04-stock-summary.png)
+
+---
+
 ## Setup & Running
 
 **Prerequisites:** Node.js ≥ 18, `sqlite3` CLI (for fixture seeding only).
@@ -126,6 +138,7 @@ The database (`database.db`), property configuration (`properties.json`), and Sh
 | Endpoint | Description |
 |---|---|
 | `GET /` | Dashboard |
+| `GET /stock` | Filter stock summary (quantity by size) |
 | `GET /review` | Manual review queue |
 | `POST /export` | Generate and record an export batch |
 | `POST /import` | Multipart upload of a ShipStation CSV |

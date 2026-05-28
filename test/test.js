@@ -29,7 +29,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const { hasAirFilterRider, parseRiders, getEligibleTenants } = require("../src/eligibility");
-const { runImport, getPendingReviews } = require("../src/import");
+const { runImport, getPendingReviews, getFilterStockSummary } = require("../src/import");
 const db = require("../src/db");
 
 // Cleanup: remove the test DB (and its WAL/SHM siblings) when the process exits.
@@ -122,4 +122,26 @@ test("import: pending review queue contains the two known ambiguous rows", () =>
   assert.equal(pending.length, 2);
   const names = pending.map((p) => p.raw_name).sort();
   assert.deepEqual(names, ["Casey Morgan", "German Gerhold"]);
+});
+
+test("stock summary: totals reconcile with filter_sizes table", () => {
+  const summary = getFilterStockSummary();
+
+  // Parsed total in the summary must equal the parsed_ok rows in the table
+  const dbParsed = db.prepare(`SELECT COUNT(*) AS c FROM filter_sizes WHERE parsed_ok = 1`).get().c;
+  const dbUnparsed = db.prepare(`SELECT COUNT(*) AS c FROM filter_sizes WHERE parsed_ok = 0`).get().c;
+
+  assert.equal(summary.totalParsed, dbParsed);
+  assert.equal(summary.totalUnparsed, dbUnparsed);
+
+  // The per-size counts must sum to the parsed total (nothing dropped)
+  const sumOfRows = summary.parsed.reduce((s, r) => s + r.count, 0);
+  assert.equal(sumOfRows, summary.totalParsed);
+
+  // distinctSizes must match the number of grouped rows
+  assert.equal(summary.distinctSizes, summary.parsed.length);
+
+  // The known unparseable token must appear in the follow-up list, not the totals
+  const followup = summary.unparsed.find((u) => u.raw_size === "twenty-by-twenty");
+  assert.ok(followup, "'twenty-by-twenty' should be in the follow-up list");
 });

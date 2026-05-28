@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Filter Stock Summary — Air Filter Shipment System</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f7fa; color: #1a1a2e; }
+    header { background: #16213e; color: #fff; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.25rem; font-weight: 600; }
+    nav a { color: #e0e0ff; text-decoration: none; margin-left: 1.5rem; font-size: 0.9rem; }
+    nav a:hover { color: #fff; }
+    main { max-width: 960px; margin: 2rem auto; padding: 0 1.5rem; }
+    .page-title { margin-bottom: 1.5rem; }
+    .page-title h2 { font-size: 1.25rem; font-weight: 600; }
+    .page-title p { color: #64748b; font-size: 0.875rem; margin-top: 0.25rem; }
+    .stat-bar { display: flex; gap: 1rem; margin-bottom: 2rem; }
+    .stat { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1.25rem 1.5rem; flex: 1; }
+    .stat .num { font-size: 2rem; font-weight: 700; color: #2563eb; }
+    .stat .label { font-size: 0.85rem; color: #64748b; margin-top: 0.25rem; }
+    section { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; margin-bottom: 2rem; }
+    section h2 { padding: 1rem 1.5rem; border-bottom: 1px solid #e2e8f0; font-size: 1rem; font-weight: 600; }
+    .section-inner { padding: 1.5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    th { text-align: left; padding: 0.5rem 0.75rem; background: #f8fafc; color: #64748b; font-weight: 600; border-bottom: 1px solid #e2e8f0; }
+    td { padding: 0.625rem 0.75rem; border-bottom: 1px solid #f1f5f9; }
+    tr:last-child td { border-bottom: none; }
+    .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+    th.num { text-align: right; }
+    .empty-cell { color: #64748b; text-align: center; padding: 1.5rem; }
+    .hint { font-size: 0.8rem; color: #64748b; margin-bottom: 0.75rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Air Filter Shipment System</h1>
+    <nav>
+      <a href="/">Dashboard</a>
+      <a href="/stock">Stock Summary</a>
+      <a href="/review">Review Queue</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="page-title">
+      <h2>Filter Stock Summary</h2>
+      <p>Breakdown of filter sizes across all imported shipments — what the warehouse needs to keep stocked.</p>
+    </div>
+
+    <div class="stat-bar">
+      <div class="stat">
+        <div class="num">{{TOTAL_FILTERS}}</div>
+        <div class="label">Filters shipped (parsed)</div>
+      </div>
+      <div class="stat">
+        <div class="num">{{DISTINCT_SIZES}}</div>
+        <div class="label">Distinct sizes</div>
+      </div>
+      <div class="stat">
+        <div class="num">{{NEEDS_FOLLOWUP}}</div>
+        <div class="label">Sizes needing follow-up</div>
+      </div>
+    </div>
+
+    <section>
+      <h2>Quantity by Size</h2>
+      <table>
+        <thead>
+          <tr><th>Filter Size (L×W×D, inches)</th><th class="num">Quantity</th></tr>
+        </thead>
+        <tbody>{{PARSED_ROWS}}</tbody>
+      </table>
+    </section>
+
+    {{UNPARSED_SECTION}}
+  </main>
+</body>
+</html>
